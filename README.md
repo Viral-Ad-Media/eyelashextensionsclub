@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Eyelash Extensions Club
 
-## Getting Started
+A rebuild of eyelashextensionsclub.com, replacing the old WordPress site.
 
-First, run the development server:
+**Stack:** Next.js 16 (App Router, Cache Components) · Tailwind CSS 4 · Neon Postgres via Drizzle ORM · Better Auth (email + password).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## What's here
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Public site at the same URLs as the old WordPress site (`/slug/`, `/category/slug/`, `/blog/`, `/faq/`, `/privacy-policy/`). Old dated permalinks (`/2020/08/28/slug/`) redirect to `/slug/`.
+- 18 articles and 2 pages, written fresh for the rebuild, in `src/content/`. Images are the originals from the Oct 19, 2026 backup, in `public/wp-content/uploads/` (same paths as before, so old image links keep working).
+- `/admin/`: editor for posts and pages (create, edit, publish, delete). HTML is sanitized on save.
+- `sitemap.xml`, `robots.txt`, Open Graph and Article structured data.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Security notes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The old site was compromised (login backdoor, hidden "system" admin, spam pages proxying an outside server, planted Google verification files). None of that code or those files were carried over. In this rebuild:
 
-## Learn More
+- Only emails listed in `ADMIN_EMAILS` can create an account or open `/admin`. Every admin page and server action checks the session itself.
+- Post HTML is sanitized (no scripts, iframes, event handlers or inline styles).
+- Unknown URLs, including the old spam URLs, return a real 404.
 
-To learn more about Next.js, take a look at the following resources:
+## Setup
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Create a Neon project and copy its connection string.
+2. `cp .env.example .env` and fill in the values (`openssl rand -base64 32` for `BETTER_AUTH_SECRET`).
+3. Install and create the tables:
+   ```bash
+   npm install
+   npm run db:migrate   # applies drizzle/ migrations
+   npm run db:seed      # loads categories, posts and pages (safe to re-run; overwrites seeded posts)
+   ```
+4. `npm run dev`, then go to `/sign-in/`, choose "Create your editor account" with an email from `ADMIN_EMAILS`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The build reads published slugs from the database, so `DATABASE_URL` must be set at build time too (e.g. in Vercel project env vars).
 
-## Deploy on Vercel
+## Deploying (Vercel)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Import the repo, add the env vars from `.env.example` (with `BETTER_AUTH_URL` and `NEXT_PUBLIC_SITE_URL` set to the real domain), run `npm run db:migrate && npm run db:seed` once against the Neon database, then deploy.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Local dev server |
+| `npm run build` | Production build |
+| `npm run db:generate` | Create a migration after editing `src/db/schema.ts` |
+| `npm run db:migrate` | Apply migrations |
+| `npm run db:seed` | Load `src/content/` into the database |
