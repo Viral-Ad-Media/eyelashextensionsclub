@@ -5,7 +5,9 @@ import { getCategories, getPostsInCategory } from "@/lib/posts";
 
 export async function generateStaticParams() {
   const cats = await getCategories();
-  return cats.map((c) => ({ slug: c.slug }));
+  // Cache Components requires at least one param. On an empty database, use a placeholder
+  // that simply renders the 404 page, so the build still succeeds.
+  return cats.length ? cats.map((c) => ({ slug: c.slug })) : [{ slug: "__none__" }];
 }
 
 export async function generateMetadata({ params }: PageProps<"/category/[slug]">): Promise<Metadata> {
