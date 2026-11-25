@@ -26,16 +26,26 @@ The old site was compromised (login backdoor, hidden "system" admin, spam pages 
 3. Install and create the tables:
    ```bash
    npm install
-   npm run db:migrate   # applies drizzle/ migrations
-   npm run db:seed      # loads categories, posts and pages (safe to re-run; overwrites seeded posts)
+   npm run db:prepare   # applies drizzle/ migrations, then loads the starter content if there are no posts yet
    ```
+   (`npm run db:seed` force-reloads the starter content and overwrites edits to those posts.)
 4. `npm run dev`, then go to `/sign-in/`, choose "Create your editor account" with an email from `ADMIN_EMAILS`.
 
-The build reads published slugs from the database, so `DATABASE_URL` must be set at build time too (e.g. in Vercel project env vars).
+`npm run build` runs `db:prepare` first, so every deploy applies new migrations, and the very first deploy to an empty database loads the starter content. Later deploys never overwrite posts. `DATABASE_URL` must therefore be available at build time.
 
 ## Deploying (Vercel)
 
-Import the repo, add the env vars from `.env.example` (with `BETTER_AUTH_URL` and `NEXT_PUBLIC_SITE_URL` set to the real domain), run `npm run db:migrate && npm run db:seed` once against the Neon database, then deploy.
+Import the repo and add these environment variables (Production and Preview):
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | Neon connection string |
+| `BETTER_AUTH_SECRET` | A long random string (`openssl rand -base64 32`) |
+| `BETTER_AUTH_URL` | The site's public URL, e.g. `https://eyelashextensionsclub.com` |
+| `NEXT_PUBLIC_SITE_URL` | Same as `BETTER_AUTH_URL` |
+| `ADMIN_EMAILS` | Comma-separated emails allowed to use `/admin` |
+
+Then deploy. The build creates the tables and loads the content by itself.
 
 ## Scripts
 

@@ -9,7 +9,9 @@ import { formatDate, site } from "@/lib/site";
 
 export async function generateStaticParams() {
   const rows = await getAllPublishedSlugs();
-  return rows.map((r) => ({ slug: r.slug }));
+  // Cache Components requires at least one param. On an empty database, use a placeholder
+  // that simply renders the 404 page, so the build still succeeds.
+  return rows.length ? rows.map((r) => ({ slug: r.slug })) : [{ slug: "__none__" }];
 }
 
 export async function generateMetadata({ params }: PageProps<"/[slug]">): Promise<Metadata> {

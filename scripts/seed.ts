@@ -1,8 +1,11 @@
 /**
  * Loads the categories, posts and pages in src/content into the database.
  * Safe to re-run: existing rows with the same slug are updated, not duplicated.
+ * Note that re-running overwrites edits made in /admin to those seeded posts.
  *
  *   npm run db:seed
+ *
+ * scripts/prepare-db.ts calls seed() during deploys, but only when the database has no posts.
  */
 import "dotenv/config";
 import { eq } from "drizzle-orm";
@@ -14,14 +17,12 @@ import * as schema from "../src/db/schema";
 import { categories, seedContent } from "../src/content";
 import { sanitizeContent } from "../src/lib/sanitize";
 
-const url = process.env.DATABASE_URL;
-if (!url) throw new Error("DATABASE_URL is not set");
-const pool = /\.neon\.tech|neon\.build/.test(url) ? null : new Pool({ connectionString: url });
-const db: NeonHttpDatabase<typeof schema> = pool
-  ? (drizzle(pool, { schema }) as unknown as NeonHttpDatabase<typeof schema>)
-  : drizzleNeon(neon(url), { schema });
+export async function seed(url: string) {
+  const pool = /\.neon\.tech|neon\.build/.test(url) ? null : new Pool({ connectionString: url });
+  const db: NeonHttpDatabase<typeof schema> = pool
+    ? (drizzle(pool, { schema }) as unknown as NeonHttpDatabase<typeof schema>)
+    : drizzleNeon(neon(url), { schema });
 
-async function main() {
   for (const c of categories) {
     await db
       .insert(schema.category)
@@ -56,7 +57,12 @@ async function main() {
   await pool?.end();
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+// Run directly: `npm run db:seed`
+if (process.argv[1]?.endsWith("seed.ts")) {
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error("DATABASE_URL is not set");
+  seed(url).catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+}
