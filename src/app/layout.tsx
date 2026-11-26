@@ -13,7 +13,18 @@ export const metadata: Metadata = {
   title: { default: `${site.name}: Lash Extension Guides & Tips`, template: `%s | ${site.name}` },
   description: site.description,
   icons: { icon: "/brand/icon.png" },
-  openGraph: { siteName: site.name, type: "website" },
+  openGraph: {
+    siteName: site.name,
+    type: "website",
+    url: "/",
+    title: `${site.name}: Lash Extension Guides & Tips`,
+    description: site.description,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${site.name}: Lash Extension Guides & Tips`,
+    description: site.description,
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
